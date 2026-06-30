@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+sqlalchemy
+pydantic
+python-dotenv
+python-multipart
+
+pytesseract
+pdf2image
+Pillow
+
+pytest
+httpx
+
+python-magic
