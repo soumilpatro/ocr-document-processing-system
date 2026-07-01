@@ -12,6 +12,10 @@ class Settings(BaseSettings):
 
     OCR_CONFIDENCE_THRESHOLD: float
 
+    POPPLER_PATH: str
+
+    TESSERACT_PATH: str
+
     class Config:
         env_file = ".env"
 
