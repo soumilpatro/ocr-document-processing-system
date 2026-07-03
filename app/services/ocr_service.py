@@ -1,42 +1,59 @@
 import os
+import time
 import pytesseract
 from pdf2image import convert_from_path
 from PIL import Image
 from app.services.text_cleanup_service import clean_text
 from app.config.settings import settings
+from app.services.logging.logger import logger
 pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_PATH
 
 
 
 def extract_text_from_image(image_path: str) -> str:
-    """
-    Extract text from an image using Tesseract OCR.
-    """
-    image = Image.open(image_path)
 
-    text = pytesseract.image_to_string(image)
+    logger.info(f"Starting OCR for image: {image_path}")
+    start_time = time.perf_counter()
+    try:
+        image = Image.open(image_path)
 
-    return clean_text(text)
+        text = pytesseract.image_to_string(image)
+        
 
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"Image OCR completed successfully in {elapsed:.2f} seconds.")
+        return clean_text(text)
 
-def extract_text_from_pdf(pdf_path: str) -> str:
-    """
-    Extract text from every page of a PDF.
-    """
+    except Exception as e:
+        logger.error(f"Image OCR failed: {str(e)}")
+        raise
 
-    pages = convert_from_path(
-    pdf_path,
-    poppler_path=settings.POPPLER_PATH,
-)
+def extract_text_from_pdf(pdf_path: str):
 
-    extracted_text = ""
+    logger.info(f"Starting OCR for PDF: {pdf_path}")
+    start_time = time.perf_counter()
+    try:
 
-    for page in pages:
-        extracted_text += pytesseract.image_to_string(page)
-        extracted_text += "\n"
+        pages = convert_from_path(
+            pdf_path,
+            poppler_path=settings.POPPLER_PATH,
+        )
 
-    return clean_text(extracted_text)
+        logger.info(f"Converted PDF into {len(pages)} pages.")
 
+        extracted_text = ""
+
+        for page in pages:
+            extracted_text += pytesseract.image_to_string(page)
+            extracted_text += "\n"
+
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"PDF OCR completed successfully in {elapsed:.2f} seconds.")
+        return clean_text(extracted_text)
+
+    except Exception as e:
+        logger.error(f"PDF OCR failed: {str(e)}")
+        raise
 
 def extract_text(file_path: str) -> str:
     """
