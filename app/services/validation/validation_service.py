@@ -41,7 +41,19 @@ def validate_transactions(transactions: list[TransactionSchema]):
 
 def validate_document(header, transactions):
 
+    header_errors = validate_header(header)
+    transaction_errors = validate_transactions(transactions)
+
     return {
-        "header": validate_header(header),
-        "transactions": validate_transactions(transactions),
+
+        "status": "VALID"
+        if not header_errors and not transaction_errors
+        else "INVALID",
+
+        "header": header_errors,
+
+        "transactions": transaction_errors,
+
+        "totalErrors": len(header_errors) + len(transaction_errors),
+
     }

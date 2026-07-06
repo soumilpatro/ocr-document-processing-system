@@ -1,16 +1,18 @@
-from fastapi import APIRouter, Depends, File, UploadFile, Query
+from fastapi import APIRouter, Depends, File, UploadFile, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database.database import get_db
-from app.models.document import Document
 
-from app.services.document_service import create_document
-from app.services.storage_service import save_uploaded_file
-from app.services.upload_service import (
-    check_duplicate_document,
-    generate_file_hash,
-    validate_file,
-)
+from app.models.document import Document
+from app.models.header import Header
+from app.models.transaction import Transaction
+
+from app.schemas.header_schema import HeaderSchema, StatementPeriod
+from app.schemas.transaction_schema import TransactionSchema
+
+from app.services.processing_service import process_document
+from app.services.confidence.confidence_service import overall_confidence
+from app.services.validation.validation_service import validate_document
 
 router = APIRouter(
     prefix="/api/documents",
@@ -26,33 +28,7 @@ async def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
-
-    # Step 1: Validate file
-    await validate_file(file)
-
-    # Step 2: Generate SHA-256 hash
-    file_hash = await generate_file_hash(file)
-
-    # Step 3: Check duplicates
-    await check_duplicate_document(db, file_hash)
-
-    # Step 4: Save file locally
-    file_path = await save_uploaded_file(file)
-
-    # Step 5: Save metadata
-    document = create_document(
-        db=db,
-        filename=file.filename,
-        file_path=file_path,
-        file_hash=file_hash,
-    )
-
-    return {
-        "documentId": document.id,
-        "status": document.status,
-        "filename": document.filename,
-        "filePath": document.file_path,
-    }
+    return await process_document(file, db)
 
 
 # -------------------------------------------------------
@@ -76,6 +52,12 @@ def get_all_documents(
         }
         for doc in documents
     ]
+
+
+# -------------------------------------------------------
+# Search Documents
+# -------------------------------------------------------
+@router.get("/search")
 # -------------------------------------------------------
 # Search Documents
 # -------------------------------------------------------
@@ -83,10 +65,20 @@ def get_all_documents(
 def search_documents(
     filename: str | None = Query(default=None),
     status: str | None = Query(default=None),
+    account_holder: str | None = Query(default=None),
+    account_number: str | None = Query(default=None),
+    branch: str | None = Query(default=None),
+    ifsc: str | None = Query(default=None),
     db: Session = Depends(get_db),
 ):
 
-    query = db.query(Document)
+    query = (
+        db.query(Document)
+        .outerjoin(
+            Header,
+            Document.id == Header.document_id
+        )
+    )
 
     if filename:
         query = query.filter(
@@ -98,18 +90,53 @@ def search_documents(
             Document.status == status
         )
 
+    if account_holder:
+        query = query.filter(
+            Header.account_holder.ilike(
+                f"%{account_holder}%"
+            )
+        )
+
+    if account_number:
+        query = query.filter(
+            Header.account_number.ilike(
+                f"%{account_number}%"
+            )
+        )
+
+    if branch:
+        query = query.filter(
+            Header.branch.ilike(
+                f"%{branch}%"
+            )
+        )
+
+    if ifsc:
+        query = query.filter(
+            Header.ifsc.ilike(
+                f"%{ifsc}%"
+            )
+        )
+
     documents = query.all()
 
     return [
+
         {
+
             "id": doc.id,
             "filename": doc.filename,
             "status": doc.status,
             "pages": doc.pages,
             "created_at": doc.created_at,
+
         }
+
         for doc in documents
+
     ]
+
+
 # -------------------------------------------------------
 # Get Single Document
 # -------------------------------------------------------
@@ -126,17 +153,87 @@ def get_document(
     )
 
     if not document:
-        return {
-            "error": "Document not found"
-        }
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found"
+        )
+
+    header_db = (
+        db.query(Header)
+        .filter(Header.document_id == document_id)
+        .first()
+    )
+
+    transactions_db = (
+        db.query(Transaction)
+        .filter(Transaction.document_id == document_id)
+        .all()
+    )
+
+    header = HeaderSchema(
+
+        account_holder=header_db.account_holder,
+        account_number=header_db.account_number,
+        branch=header_db.branch,
+        ifsc=header_db.ifsc,
+        statement_date=header_db.statement_date,
+
+        statement_period=StatementPeriod(
+
+            from_date=header_db.statement_from,
+            to_date=header_db.statement_to,
+
+        )
+
+    )
+
+    transactions = [
+
+        TransactionSchema(
+
+            date=txn.date,
+            description=txn.description,
+            debit=txn.debit,
+            credit=txn.credit,
+            balance=txn.balance,
+
+        )
+
+        for txn in transactions_db
+
+    ]
+
+    confidence = overall_confidence(
+        header,
+        transactions
+    )
+
+    validation = validate_document(
+        header,
+        transactions
+    )
 
     return {
-        "id": document.id,
+
+        "documentId": document.id,
         "filename": document.filename,
         "status": document.status,
-        "filePath": document.file_path,
         "pages": document.pages,
         "created_at": document.created_at,
         "updated_at": document.updated_at,
-    }
 
+        "header": header.model_dump(),
+
+        "transactions": [
+
+            txn.model_dump()
+
+            for txn in transactions
+
+        ],
+
+        "confidence": confidence,
+
+        "validation": validation,
+
+    }

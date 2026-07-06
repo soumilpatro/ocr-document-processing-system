@@ -1,0 +1,152 @@
+{
+  "info": {
+    "_postman_id": "b1b00e55-53b0-49d5-b5a2-c1f875277557",
+    "name": "OCR Document Processing System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "56398922",
+    "_collection_link": "https://go.postman.co/collection/56398922-b1b00e55-53b0-49d5-b5a2-c1f875277557?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Upload Document",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "uuid": "539e9a5c-7da2-4f3c-b67a-5b93ee385655",
+              "src": "postman-cloud:///1f17888c-0e2f-4220-8dc7-c529e7b47324"
+            }
+          ]
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/documents/upload",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "documents",
+            "upload"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Documents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/documents",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "documents"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Search Documents",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/documents/search?status=OK",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "documents",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "OK"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Document By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/documents/9e55242c-e589-4e9a-ad54-aef904ba77f2",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "documents",
+            "9e55242c-e589-4e9a-ad54-aef904ba77f2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Validate Document",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "http://127.0.0.1:8000/api/documents/9e55242c-e589-4e9a-ad54-aef904ba77f2/validate",
+          "protocol": "http",
+          "host": [
+            "127",
+            "0",
+            "0",
+            "1"
+          ],
+          "port": "8000",
+          "path": [
+            "api",
+            "documents",
+            "9e55242c-e589-4e9a-ad54-aef904ba77f2",
+            "validate"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

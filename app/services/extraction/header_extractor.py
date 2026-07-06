@@ -76,10 +76,30 @@ def extract_account_holder(text: str):
         if line.strip()
     ]
 
-    # -----------------------------
+    # ---------------------------------
     # Strategy 1
-    # Label Based
-    # -----------------------------
+    # Name on same line as label
+    # ---------------------------------
+
+    for line in lines:
+
+        upper = line.upper()
+
+        if any(label in upper for label in NAME_LABELS):
+
+            parts = re.split(r":", line, maxsplit=1)
+
+            if len(parts) > 1:
+
+                candidate = parts[1].strip()
+
+                if is_valid_name(candidate):
+                    return candidate
+
+    # ---------------------------------
+    # Strategy 2
+    # Name on next few lines
+    # ---------------------------------
 
     for index, line in enumerate(lines):
 
@@ -97,10 +117,10 @@ def extract_account_holder(text: str):
                 if is_valid_name(candidate):
                     return candidate
 
-    # -----------------------------
-    # Strategy 2
-    # First valid uppercase name
-    # -----------------------------
+    # ---------------------------------
+    # Strategy 3
+    # First uppercase-looking name
+    # ---------------------------------
 
     for candidate in lines[:10]:
 
@@ -110,7 +130,6 @@ def extract_account_holder(text: str):
                 return candidate.title()
 
     return None
-
 
 def extract_account_number(text: str):
 

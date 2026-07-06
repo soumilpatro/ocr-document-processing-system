@@ -27,3 +27,5 @@ uploads/*
 
 # macOS
 .DS_Store
+
+*.pyc

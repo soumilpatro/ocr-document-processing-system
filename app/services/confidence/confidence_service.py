@@ -57,6 +57,21 @@ def header_confidence(header: HeaderSchema):
 
 def transaction_confidence(transaction: TransactionSchema):
 
+    # -----------------------------
+    # Debit / Credit Logic
+    # -----------------------------
+
+    if transaction.debit is None and transaction.credit is None:
+
+        debit_confidence = 0.0
+        credit_confidence = 0.0
+
+    else:
+
+        # One side being empty is expected
+        debit_confidence = 0.98
+        credit_confidence = 0.98
+
     return {
 
         "date":
@@ -66,10 +81,10 @@ def transaction_confidence(transaction: TransactionSchema):
             confidence_from_value(transaction.description),
 
         "debit":
-            confidence_from_value(transaction.debit),
+            debit_confidence,
 
         "credit":
-            confidence_from_value(transaction.credit),
+            credit_confidence,
 
         "balance":
             confidence_from_value(transaction.balance)
@@ -79,16 +94,54 @@ def transaction_confidence(transaction: TransactionSchema):
 
 def overall_confidence(header, transactions):
 
+    header_scores = header_confidence(header)
+
+    transaction_scores = [
+
+        transaction_confidence(txn)
+
+        for txn in transactions
+
+    ]
+
+    scores = []
+
+    # -------------------------
+    # Header Scores
+    # -------------------------
+
+    for key, value in header_scores.items():
+
+        if isinstance(value, dict):
+
+            scores.extend(value.values())
+
+        else:
+
+            scores.append(value)
+
+    # -------------------------
+    # Transaction Scores
+    # -------------------------
+
+    for txn in transaction_scores:
+
+        scores.extend(txn.values())
+
+    overall = round(
+
+        (sum(scores) / len(scores)) * 100,
+
+        2
+
+    )
+
     return {
 
-        "header": header_confidence(header),
+        "overall": overall,
 
-        "transactions": [
+        "header": header_scores,
 
-            transaction_confidence(txn)
-
-            for txn in transactions
-
-        ]
+        "transactions": transaction_scores
 
     }
