@@ -1,0 +1,6 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/documents/search?status=OK
+method: GET
+queryParams:
+  status: OK
+order: 3000

@@ -1,0 +1,10 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/documents/upload
+method: POST
+body:
+  type: formdata
+  content:
+    - type: file
+      key: file
+      src: postman-cloud:///1f17888c-0e2f-4220-8dc7-c529e7b47324
+order: 1000

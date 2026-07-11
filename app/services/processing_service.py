@@ -11,6 +11,13 @@ from app.models.header import Header
 from app.models.transaction import Transaction
 
 from app.services.response_service import build_extracted_fields
+
+from app.services.masking_service import (
+    mask_name,
+    mask_account_number,
+    mask_ifsc,
+)
+
 from app.services.upload_service import (
     validate_file,
     generate_file_hash,
@@ -19,7 +26,7 @@ from app.services.upload_service import (
 
 from app.services.storage_service import save_uploaded_file
 
-from app.services.pdf_service import extract_text_from_pdf
+from app.services.ocr_service import extract_text
 from app.services.status_service import determine_document_status
 
 from app.services.extraction.document_parser import split_document
@@ -55,17 +62,26 @@ async def process_document(
     # OCR
     # ---------------------------------
 
-    text = extract_text_from_pdf(saved_path)
+    text = extract_text(saved_path)
+
     if not text or text.strip() == "":
-       raise HTTPException(
-        status_code=422,
-        detail={
-            "errorCode": "NO_TEXT_EXTRACTED",
-            "message": "No readable text could be extracted from the uploaded document."
-        }
-    )
+
+        raise HTTPException(
+
+            status_code=422,
+
+            detail={
+
+                "errorCode": "NO_TEXT_EXTRACTED",
+
+                "message": "No readable text could be extracted from the uploaded document."
+
+            }
+
+        )
 
     sections = split_document(text)
+
     print("\n========== HEADER TEXT ==========\n")
     print(sections["header"])
 
@@ -83,24 +99,24 @@ async def process_document(
 
     if transactions:
 
-       dates = sorted(
-           
-           txn.date
-           for txn in transactions
-           if txn.date
-       )
-        
+        dates = sorted(
 
-       if dates:
-           
-           if header.statement_period.from_date is None:
-               header.statement_period.from_date = dates[0]
+            txn.date
 
-           if header.statement_period.to_date is None:
-               header.statement_period.to_date = dates[-1]
-        
+            for txn in transactions
 
-        
+            if txn.date
+
+        )
+
+        if dates:
+
+            if header.statement_period.from_date is None:
+                header.statement_period.from_date = dates[0]
+
+            if header.statement_period.to_date is None:
+                header.statement_period.to_date = dates[-1]
+
     confidence = overall_confidence(
         header,
         transactions
@@ -112,9 +128,12 @@ async def process_document(
     )
 
     status = determine_document_status(
-    confidence["overall"],
-    validation
-)
+
+        confidence["overall"],
+
+        validation
+
+    )
 
     # ---------------------------------
     # Save Database
@@ -123,26 +142,43 @@ async def process_document(
     document_id = str(uuid.uuid4())
 
     document = Document(
+
         id=document_id,
+
         filename=file.filename,
+
         file_path=saved_path,
+
         file_hash=file_hash,
+
         status=status,
+
         pages=len(text.split("\f"))
+
     )
 
     db.add(document)
 
     header_row = Header(
+
         id=str(uuid.uuid4()),
+
         document_id=document_id,
+
         account_holder=header.account_holder,
+
         account_number=header.account_number,
+
         branch=header.branch,
+
         ifsc=header.ifsc,
+
         statement_date=header.statement_date,
+
         statement_from=header.statement_period.from_date,
+
         statement_to=header.statement_period.to_date
+
     )
 
     db.add(header_row)
@@ -173,31 +209,60 @@ async def process_document(
 
     return {
 
-    "documentId": document_id,
+        "documentId": document_id,
 
-    "status": status,
+        "status": status,
 
-    "pages": len(text.split("\f")),
+        "pages": len(text.split("\f")),
 
-    "confidence": confidence,
+        "confidence": confidence,
 
-    "validation": validation,
+        "validation": validation,
 
-    # Assignment Requirement
-    "extractedFields": build_extracted_fields(
-        header,
-        confidence
-    ),
+        "extractedFields": build_extracted_fields(
 
-    # Existing Response
-    "header": header.model_dump(),
+            header,
 
-    "transactions": [
+            confidence
 
-        txn.model_dump()
+        ),
 
-        for txn in transactions
+        "header": {
 
-    ]
+            "account_holder": mask_name(
+                header.account_holder
+            ),
 
-}
+            "account_number": mask_account_number(
+                header.account_number
+            ),
+
+            "branch": header.branch,
+
+            "ifsc": mask_ifsc(
+                header.ifsc
+            ),
+
+            "statement_date": header.statement_date,
+
+            "statement_period": {
+
+                "from_date":
+                    header.statement_period.from_date,
+
+                "to_date":
+                    header.statement_period.to_date,
+
+            }
+
+        },
+
+        "transactions": [
+
+            txn.model_dump()
+
+            for txn in transactions
+
+        ]
+
+    }

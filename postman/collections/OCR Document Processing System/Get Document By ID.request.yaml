@@ -1,0 +1,4 @@
+$kind: http-request
+url: http://127.0.0.1:8000/api/documents/9e55242c-e589-4e9a-ad54-aef904ba77f2
+method: GET
+order: 4000

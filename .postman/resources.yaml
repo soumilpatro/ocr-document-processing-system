@@ -1,0 +1,8 @@
+workspace:
+  id: 623c1eb6-649f-46cb-8a82-83b286fbbda1
+
+# Each entry here maps a local resource to one or more corresponding objects in Postman Cloud
+
+cloudResources:
+  collections:
+    ../postman/collections/OCR Document Processing System: 56398922-b1b00e55-53b0-49d5-b5a2-c1f875277557

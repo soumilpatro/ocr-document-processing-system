@@ -1,0 +1,4 @@
+account_holder,account_number,branch,ifsc,statement_date,statement_from,statement_to,txn_date,description,debit,credit,balance
+John Doe,1234567890123456,Mumbai,HDFC0001234,2025-07-10,2025-06-01,2025-06-30,2025-06-01,Salary,,50000,50000
+John Doe,1234567890123456,Mumbai,HDFC0001234,2025-07-10,2025-06-01,2025-06-30,2025-06-02,ATM Withdrawal,1000,,49000
+John Doe,1234567890123456,Mumbai,HDFC0001234,2025-07-10,2025-06-01,2025-06-30,2025-06-03,UPI Payment,500,,48500
